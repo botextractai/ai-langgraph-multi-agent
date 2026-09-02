@@ -2,16 +2,14 @@ import os
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 from tavily import TavilyClient
 from typing import TypedDict, List
 
-os.environ['OPENAI_API_KEY'] = "REPLACE_THIS_WITH_YOUR_OPENAI_API_KEY"
-os.environ['TAVILY_API_KEY'] = "REPLACE_THIS_WITH_YOUR_TAVILY_API_KEY"
-
-# Set the conversation memory type
-memory = SqliteSaver.from_conn_string(":memory:")
+# These placeholders only apply when the keys are not already set in the environment
+os.environ.setdefault('OPENAI_API_KEY', "REPLACE_THIS_WITH_YOUR_OPENAI_API_KEY")
+os.environ.setdefault('TAVILY_API_KEY', "REPLACE_THIS_WITH_YOUR_TAVILY_API_KEY")
 
 # Data structure of the agent state information
 class AgentState(TypedDict):
@@ -23,7 +21,9 @@ class AgentState(TypedDict):
     revision_number: int
     max_revisions: int
 
-model = ChatOpenAI(model="gpt-4-turbo", temperature=0.3)
+# gpt-5.6 is a reasoning model: it rejects any temperature other than the
+# default, so sampling is tuned via reasoning_effort instead.
+model = ChatOpenAI(model="gpt-5.6-sol")
 
 PLAN_PROMPT = """You are an expert writer tasked with writing a report. \
 Write a report for the user provided topic. Give an outline of the report along with any relevant notes \
@@ -67,7 +67,7 @@ def research_plan_node(state: AgentState):
         SystemMessage(content=RESEARCH_PLAN_PROMPT),
         HumanMessage(content=state['task'])
     ])
-    content = state['content'] or []
+    content = state.get('content') or []
     for q in queries.queries:
         response = tavily.search(query=q, max_results=2)
         for r in response['results']:
@@ -75,7 +75,7 @@ def research_plan_node(state: AgentState):
     return {"content": content}
 
 def generation_node(state: AgentState):
-    content = "\n\n".join(state['content'] or [])
+    content = "\n\n".join(state.get('content') or [])
     user_message = HumanMessage(
         content=f"{state['task']}\n\nHere is my plan:\n\n{state['plan']}")
     messages = [
@@ -103,7 +103,7 @@ def research_critique_node(state: AgentState):
         SystemMessage(content=RESEARCH_CRITIQUE_PROMPT),
         HumanMessage(content=state['critique'])
     ])
-    content = state['content'] or []
+    content = state.get('content') or []
     for q in queries.queries:
         response = tavily.search(query=q, max_results=2)
         for r in response['results']:
@@ -143,14 +143,16 @@ builder.add_edge("research_plan", "generate")
 builder.add_edge("reflect", "research_critique")
 builder.add_edge("research_critique", "generate")
 
-# Compile with the chosen memory type
-graph = builder.compile(checkpointer=memory)
+# Set the conversation memory type, compile with it, and run it!
+# SqliteSaver owns an open database connection, so the graph can only run
+# while the context manager is still active.
+with SqliteSaver.from_conn_string(":memory:") as memory:
+    graph = builder.compile(checkpointer=memory)
 
-# Run it!
-thread = {"configurable": {"thread_id": "1"}}
-for s in graph.stream({
-    'task': "Write a report about the latest inflation figures in the European Union.",
-    "max_revisions": 2,
-    "revision_number": 1
-}, thread):
-    print(s)
+    thread = {"configurable": {"thread_id": "1"}}
+    for s in graph.stream({
+        'task': "Write a report about the latest inflation figures in the European Union.",
+        "max_revisions": 2,
+        "revision_number": 1
+    }, thread):
+        print(s)

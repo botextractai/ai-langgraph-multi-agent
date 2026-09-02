@@ -1,8 +1,8 @@
 # Multi AI agent system for report writing with LangGraph
 
-This multi-agent example uses OpenAI's ChatGPT 4 model and the LangChain Tavily search tool to write a report about the latest inflation figures in the European Union.
+This multi-agent example uses OpenAI's GPT-5.6 Sol model and the Tavily search tool to write a report about the latest inflation figures in the European Union.
 
-Unlike web search tools, the LangChain Tavily search tool delivers actual search results, rather than just links or raw web (HTML) pages.
+Unlike web search tools, the Tavily search tool delivers actual search results, rather than just links or raw web (HTML) pages.
 
 This example uses a total of 5 LangGraph agents (nodes). LangGraph is a library for building stateful, multi-agent applications with Large Language Models (LLMs), built on top of (and intended to be used with) LangChain. LangGraph describes and orchestrates agent control flows.
 
@@ -13,15 +13,15 @@ This example uses a total of 5 LangGraph agents (nodes). LangGraph is a library 
 
 In this example, each of the 5 agents plays a different role:
 
-1. "plan"
+1. "planner"
 2. "research_plan"
 3. "generate"
 4. "reflect"
 5. "research_critique"
 
-The workflow of this example starts with the "plan" agent (1). This agent defines the task along with any relevant notes or instructions.
+The workflow of this example starts with the "planner" agent (1). This agent defines the task along with any relevant notes or instructions.
 
-The "reseach_plan" agent (2) is then charged with providing information that can be used to write the report. This agent generates a list of search queries that gather relevant information using the Taviliy search tool. It does generate a maximum of 3 queries.
+The "research_plan" agent (2) is then charged with providing information that can be used to write the report. This agent generates a list of search queries that gather relevant information using the Tavily search tool. It does generate a maximum of 3 queries.
 
 The "generate" agent (3) then writes the actual report. If this agent is called for the first time, then it writes the initial draft to be passed on to the "reflect" agent (4). If this agent is called in later iterations ("revisions"), it also incorporates the feedback provided by the following two agents (4 and 5). The number of revisions can be set in the `main.py` script with the `max_revisions` setting. The default value is 2, which means that the workflow just does 1 full revision loop (including agents 4 and 5).
 
@@ -33,9 +33,9 @@ The "research_critique" agent (5) then provides additional search queries for th
 
 After this, the "generate" agent (3) gets called again to write an improved version of the report that incorporates the additional suggestions and information.
 
-You need an OpenAI API key for this example. [Get your OpenAI API key here](https://platform.openai.com/login). You can insert your OpenAI API key in the `main.py` script, or you can supply your OpenAI API key either via the `.env` file, or through an environment variable called `OPENAI_API_KEY`. If you don't want to use an OpenAI model, then you can also use other models, including local models.
+You need an OpenAI API key for this example. [Get your OpenAI API key here](https://platform.openai.com/login). You can insert your OpenAI API key in the `main.py` script, or you can supply your OpenAI API key through an environment variable called `OPENAI_API_KEY`, which takes precedence over the placeholder in the script. If you don't want to use an OpenAI model, then you can also use other models, including local models.
 
-You also need a free Tavily API key for this example. [Get your free Tavily API key here](https://app.tavily.com/sign-in). You can insert your Tavily API key in the `main.py` script, or you can supply your Tavily API key either via the `.env` file, or through an environment variable called `TAVILY_API_KEY`.
+You also need a free Tavily API key for this example. [Get your free Tavily API key here](https://app.tavily.com/sign-in). You can insert your Tavily API key in the `main.py` script, or you can supply your Tavily API key through an environment variable called `TAVILY_API_KEY`, which takes precedence over the placeholder in the script.
 
 | >>>>> The final answer will look similar to this example: <<<<< |
 | --------------------------------------------------------------- |
